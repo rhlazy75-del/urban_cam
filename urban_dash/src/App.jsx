@@ -12,8 +12,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-const SERVER = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
+// const SERVER = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const SERVER = import.meta.env.VITE_API_URL || "http://localhost:6601";
+console.log("API URL:", SERVER);
 export default function App() {
   const [captures, setCaptures] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -81,7 +82,7 @@ export default function App() {
                 {selected.device_id} | {selected.side === "left" ? "🟢 ซ้าย" : "🟡 ขวา"} | {selected.captured_at?.slice(0, 19)}
               </p>
               <img
-                src={`${SERVER}/ucs/api/image/${selected.filename}`}
+                src={`${SERVER}/image/${selected.filename}`}
                 alt="capture"
                 className="image"
               />
