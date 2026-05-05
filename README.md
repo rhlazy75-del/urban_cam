@@ -35,6 +35,8 @@ docker-compose up --build
 
 - Frontend dashboard: `http://localhost:5173`
 - Backend API: `http://localhost:8000`
+- Backend API docs: `http://localhost:8000/docs`
+- Backend ReDoc docs: `http://localhost:8000/redoc`
 
 ## Notes
 

@@ -13,7 +13,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-const SERVER = "http://localhost:5000";
+const SERVER = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export default function App() {
   const [captures, setCaptures] = useState([]);
@@ -27,7 +27,7 @@ export default function App() {
 
   const fetchCaptures = async () => {
     try {
-      const res = await axios.get(`${SERVER}/api/captures`);
+      const res = await axios.get(`${SERVER}/ucs/api/captures`);
       setCaptures(res.data);
     } catch (err) {
       console.error("ดึงข้อมูลไม่ได้", err);
@@ -78,7 +78,7 @@ export default function App() {
                 {selected.device_id} | {selected.side === "left" ? "🟢 ซ้าย" : "🟡 ขวา"} | {selected.captured_at?.slice(0, 19)}
               </p>
               <img
-                src={`${SERVER}/image/${selected.filename}`}
+                src={`${SERVER}/ucs/api/image/${selected.filename}`}
                 alt="capture"
                 className="image"
               />

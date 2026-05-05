@@ -9,7 +9,3 @@ create table two_cams (
 	received_at	timestamp default now(),
 	label		varchar(100) default ''
 );
-
-select * from public.two_cams
-
-DELETE FROM public.two_cams;
