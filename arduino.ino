@@ -4,7 +4,7 @@
 
 const char* WIFI_SSID  = "HeNg7";
 const char* WIFI_PASS  = "heng35700";
-const char* SERVER_URL = "http://10.132.250.140:8000/ucs/api/upload";
+const char* SERVER_URL = "http://10.132.250.140:6601/ucs/api/upload";
 const char* DEVICE_ID  = "CAM_LEFT";  // ← กล้องซ้าย
 
 #define LED_PIN 4

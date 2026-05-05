@@ -30,9 +30,9 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def get_db():
     return psycopg2.connect(
         host=os.environ.get("DB_HOST", "localhost"),
-        database=os.environ.get("DB_NAME", "Project_499"),
-        user=os.environ.get("DB_USER", "postgres"),
-        password=os.environ.get("DB_PASSWORD", "357004"),
+        database=os.environ.get("DB_NAME") or os.environ.get("POSTGRES_DB", "Project_499"),
+        user=os.environ.get("DB_USER") or os.environ.get("POSTGRES_USER", "postgres"),
+        password=os.environ.get("DB_PASSWORD") or os.environ.get("POSTGRES_PASSWORD", "357004"),
     )
 
 @app.get("/")
@@ -91,6 +91,15 @@ async def upload(
 
     print(f"[{datetime.now()}] รับภาพ #{new_id} | {device_id} | {side}")
     return {"ok": True, "id": new_id}
+
+
+@app.post("/upload", status_code=201)
+async def upload_legacy(
+    image: UploadFile = File(...),
+    device_id: str = Form("CAM_001"),
+):
+    """Legacy endpoint for backward compatibility"""
+    return await upload(image, device_id)
 
 @app.get("/ucs/api/captures")
 def get_captures():
