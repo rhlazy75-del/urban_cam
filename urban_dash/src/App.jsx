@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -27,8 +26,12 @@ export default function App() {
 
   const fetchCaptures = async () => {
     try {
-      const res = await axios.get(`${SERVER}/ucs/api/captures`);
-      setCaptures(res.data);
+      const res = await fetch(`${SERVER}/captures`);
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const data = await res.json();
+      setCaptures(data);
     } catch (err) {
       console.error("ดึงข้อมูลไม่ได้", err);
     }
