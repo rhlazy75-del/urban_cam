@@ -1,0 +1,9 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.git
+.env
+docker-compose.yml
+urban_dash/node_modules
+upload_2cam

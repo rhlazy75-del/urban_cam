@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: Project_499
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 357004
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./database/T2_database.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5433:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_NAME: Project_499
+      DB_USER: postgres
+      DB_PASSWORD: 357004
+      UPLOAD_FOLDER: /app/upload_2cam
+    volumes:
+      - ./upload_2cam:/app/upload_2cam
+    ports:
+      - "8000:5000"
+
+  frontend:
+    build:
+      context: ./urban_dash
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "5173:4173"
+    environment:
+      VITE_API_URL: http://localhost:8000
+
+volumes:
+  db_data:
