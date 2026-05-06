@@ -1,0 +1,9 @@
+
+# 
+GET http://10.132.250.159/capture
+
+###
+POST http://localhost:6601/ucs/api/capture
+
+###
+GET    http://localhost:6601/ucs/api/captures

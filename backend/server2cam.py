@@ -1,7 +1,9 @@
 import os
 import uuid
 import shutil
-from datetime import datetime
+import threading
+import requests
+from datetime import datetime, timezone
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -27,13 +29,97 @@ app.add_middleware(
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", os.path.join(os.getcwd(), "upload_2cam"))
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# ==================== ตั้งค่ากล้อง ====================
+CAMERA_IPS = [
+    {"id": 1, "ip": "http://10.132.250.222"},
+    {"id": 2, "ip": "http://10.132.250.159"},
+]
+
+DB_CONFIG = {
+    "host": os.environ.get("DB_HOST", "localhost"),
+    "port": int(os.environ.get("DB_PORT", 5432)),
+    "dbname": os.environ.get("DB_NAME") or os.environ.get("POSTGRES_DB", "Project_499"),
+    "user": os.environ.get("DB_USER") or os.environ.get("POSTGRES_USER", "postgres"),
+    "password": os.environ.get("DB_PASSWORD") or os.environ.get("POSTGRES_PASSWORD", "357004"),
+}
+
+TIMEOUT = 10  # timeout ต่อ request (วินาที)
+
+# ==================== ฟังก์ชัน Database ====================
+
 def get_db():
-    return psycopg2.connect(
-        host=os.environ.get("DB_HOST", "localhost"),
-        database=os.environ.get("DB_NAME") or os.environ.get("POSTGRES_DB", "Project_499"),
-        user=os.environ.get("DB_USER") or os.environ.get("POSTGRES_USER", "postgres"),
-        password=os.environ.get("DB_PASSWORD") or os.environ.get("POSTGRES_PASSWORD", "357004"),
-    )
+    return psycopg2.connect(**DB_CONFIG)
+
+# ==================== ฟังก์ชันสำหรับการจับภาพ ====================
+
+def save_to_db(cam_id, filename, filepath, captured_at, received_at):
+    """บันทึกข้อมูลลง PostgreSQL"""
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO two_cams
+                (Filename, device_id, image_path, side, captured_at, received_at)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (filename, f"CAM{cam_id}", filepath, "cam", captured_at, received_at)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        print(f"[cam{cam_id}] 🗄️  บันทึก DB แล้ว")
+    except Exception as e:
+        print(f"[cam{cam_id}] ❌ DB Error: {e}")
+
+
+def capture_camera(cam: dict, timestamp: str):
+    """ดึงภาพจากกล้องตัวเดียว บันทึกไฟล์ และบันทึก DB"""
+    cam_id = cam["id"]
+    url = f"{cam['ip']}/capture"
+
+    captured_at = datetime.now(timezone.utc)
+
+    try:
+        response = requests.get(url, timeout=TIMEOUT)
+        received_at = datetime.now(timezone.utc)
+
+        if response.status_code == 200:
+            filename = f"cam{cam_id}_{timestamp}.jpg"
+            filepath = os.path.abspath(os.path.join(UPLOAD_FOLDER, filename))
+
+            with open(filepath, "wb") as f:
+                f.write(response.content)
+            print(f"[cam{cam_id}] ✅ บันทึกไฟล์: {filepath}")
+
+            save_to_db(cam_id, filename, filepath, captured_at, received_at)
+
+        else:
+            print(f"[cam{cam_id}] ❌ HTTP {response.status_code}")
+
+    except requests.exceptions.ConnectionError:
+        print(f"[cam{cam_id}] ❌ เชื่อมต่อไม่ได้ ({cam['ip']})")
+    except requests.exceptions.Timeout:
+        print(f"[cam{cam_id}] ❌ Timeout ({cam['ip']})")
+    except Exception as e:
+        print(f"[cam{cam_id}] ❌ Error: {e}")
+
+
+def capture_all():
+    """ดึงภาพจากทุกกล้องพร้อมกันด้วย threading"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    print(f"\n📸 ถ่ายภาพ [{timestamp}]")
+
+    threads = []
+    for cam in CAMERA_IPS:
+        t = threading.Thread(target=capture_camera, args=(cam, timestamp))
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    return {"timestamp": timestamp, "status": "captured"}
 
 @app.get("/")
 def root():
@@ -41,6 +127,7 @@ def root():
         "service": "urban_cam backend",
         "status": "ok",
         "routes": [
+            "/ucs/api/capture",
             "/ucs/api/upload",
             "/ucs/api/captures",
             "/ucs/api/image/{filename}",
@@ -50,6 +137,12 @@ def root():
             "/ucs/api/redoc",
         ],
     }
+
+@app.post("/ucs/api/capture")
+def capture():
+    """ทำการถ่ายภาพจากทุกกล้อง"""
+    result = capture_all()
+    return {"ok": True, **result}
 
 @app.get("/backend")
 def backend_info():

@@ -6,6 +6,6 @@ export default defineConfig({
   plugins: [react()],
   base: '/ucs',
   server: {
-    allowedHosts: ['geodev.fun'],
+    allowedHosts: ['geodev.fun', 'localhost', '127.0.0.1'],
   },
 })
