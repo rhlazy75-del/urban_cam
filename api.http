@@ -1,6 +1,6 @@
 
 # 
-GET http://10.132.250.159/capture
+GET http://10.132.250.160/capture
 
 ###
 POST http://localhost:6601/ucs/api/capture
