@@ -7,3 +7,28 @@ POST http://localhost:6601/ucs/api/capture
 
 ###
 GET    http://localhost:6601/ucs/api/captures
+
+###
+# Upload a local image file to the FastAPI server.
+# Replace the path below with an existing image file path.
+# Do not set Content-Type manually; the client will add the boundary.
+POST http://localhost:8000/ucs/api/upload
+
+@image=./capture_images/sample.jpg
+device_id=CAM_LEFT
+lat=13.755
+lng=100.501
+accuracy=3.2
+
+###
+# Upload using production server URL.
+POST https://geodev.fun/ucs/api/upload
+
+image=@./capture_images/sample.jpg
+device_id=CAM_LEFT
+lat=13.755
+lng=100.501
+accuracy=3.2
+
+#### delete image by id
+DELETE http://localhost:6601/ucs/api/captures/0ae66574.jpg

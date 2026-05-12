@@ -108,6 +108,9 @@ def health():
 async def upload(
     image:     UploadFile = File(...),
     device_id: str        = Form("CAM_001"),
+    lat:       Optional[float] = Form(None),
+    lng:       Optional[float] = Form(None),
+    accuracy:  Optional[float] = Form(None),
 ):
     # 1. บันทึกไฟล์
     filename  = str(uuid.uuid4())[:8] + ".jpg"
@@ -122,9 +125,9 @@ async def upload(
         await image.close()
 
     # 2. ใช้ค่า GPS ล่าสุดจากโทรศัพท์
-    lat_val   = latest_gps.get("lat")
-    lng_val   = latest_gps.get("lng")
-    acc_val   = latest_gps.get("accuracy")
+    lat_val   = lat
+    lng_val   = lng
+    acc_val   = accuracy
     side      = "left" if "LEFT" in device_id.upper() else "right"
 
     # เวลาไทย
@@ -217,6 +220,41 @@ def get_image(filename: str):
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="ไม่พบไฟล์")
     return FileResponse(file_path)
+
+
+# =========================
+# ลบภาพและข้อมูลจาก DB
+@app.delete("/ucs/api/captures/{filename}")
+def delete_capture(filename: str):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT filename FROM two_cams WHERE filename = %s", (filename,))
+        row = cur.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="ไม่พบรายการภาพ")
+
+        filename = row[0]
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"ลบไฟล์ภาพไม่ได้: {e}")
+
+        cur.execute("DELETE FROM two_cams WHERE filename = %s", (filename,))
+        conn.commit()
+        return {"ok": True, "filename": filename, "filename": filename}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        try:
+            cur.close()
+            conn.close()
+        except Exception:
+            pass
 
 
 # =========================
