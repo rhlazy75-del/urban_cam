@@ -272,6 +272,36 @@ def delete_capture(filename: str):
         except Exception:
             pass
 
+# =========================
+# ลบภาพทั้งหมดจาก DB และโฟลเดอร์
+# =========================
+@app.delete("/ucs/api/captures")
+def delete_all_captures():
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT filename FROM two_cams")
+        rows = cur.fetchall()
+        for row in rows:
+            filename = row[0]
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=f"ลบไฟล์ภาพไม่ได้: {e}")
+
+        cur.execute("DELETE FROM two_cams")
+        conn.commit()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        try:
+            cur.close()
+            conn.close()
+        except Exception:
+            pass
 
 # =========================
 # รับ GPS จาก app.py
