@@ -170,17 +170,18 @@ async def upload_legacy(
 # =========================
 # ดึงรายการภาพจาก DB
 # =========================
-@app.get("/ucs/api/captures")
-def get_captures(request: Request):
+@app.get("/ucs/api/captures/{limit}")
+def get_captures(request: Request, limit: int = 10):
     try:
         conn = get_db()
         cur  = conn.cursor()
+
         cur.execute("""
             SELECT id, filename, device_id, side, label, captured_at, lat, lng
             FROM two_cams
             ORDER BY captured_at DESC
-            LIMIT 100
-        """)
+            LIMIT %s
+        """, (limit,))
         rows = cur.fetchall()
         cur.close()
         conn.close()
@@ -224,6 +225,7 @@ def get_image(filename: str):
 
 # =========================
 # ลบภาพและข้อมูลจาก DB
+# =========================
 @app.delete("/ucs/api/captures/{filename}")
 def delete_capture(filename: str):
     try:
