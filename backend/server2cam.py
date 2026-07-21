@@ -45,6 +45,22 @@ DB_CONFIG = {
 latest_gps: dict = {"lat": None, "lng": None, "accuracy": None}
 
 
+def build_image_filename(
+    side: Optional[str] = None,
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
+    captured_at: Optional[datetime] = None,
+    ext: str = "jpg",
+) -> str:
+    side_name = (side or "side").strip().lower().replace(" ", "_")
+    lat_str = "unknown" if lat is None else f"{lat:.6f}".rstrip("0").rstrip(".")
+    lng_str = "unknown" if lng is None else f"{lng:.6f}".rstrip("0").rstrip(".")
+    dt = captured_at or datetime.now(TZ_THAI)
+    dt_str = dt.strftime("%Y%m%d_%H%M%S")
+    ext_name = ext.lstrip(".")
+    return f"image_{side_name}_{lat_str}_{lng_str}_{dt_str}.{ext_name}"
+
+
 def get_db():
     return psycopg2.connect(**DB_CONFIG)
 
@@ -113,7 +129,9 @@ async def upload(
     accuracy:  Optional[float] = Form(None),
 ):
     # 1. บันทึกไฟล์
-    filename  = str(uuid.uuid4())[:8] + ".jpg"
+    side      = "left" if "LEFT" in device_id.upper() else "right"
+    now_thai = datetime.now(TZ_THAI)
+    filename = build_image_filename(side=side, lat=lat, lng=lng, captured_at=now_thai, ext="jpg")
     file_path = os.path.join(UPLOAD_FOLDER, filename)
 
     try:
@@ -128,10 +146,6 @@ async def upload(
     lat_val   = lat
     lng_val   = lng
     acc_val   = accuracy
-    side      = "left" if "LEFT" in device_id.upper() else "right"
-
-    # เวลาไทย
-    now_thai = datetime.now(TZ_THAI)
 
     print(f"📥 {device_id} | lat={lat_val} lng={lng_val} | {now_thai.strftime('%H:%M:%S')}")
 
